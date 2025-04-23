@@ -138,7 +138,8 @@ This approach minimizes downtime and provides a quick rollback mechanism if issu
 
 ## Deployment Workflow
 
-![Deployment Workflow](deployment_workflow.png)
+![image](https://github.com/user-attachments/assets/9eca1ac3-9302-4fe4-a4d9-b546008fce75)
+
 
 1. Developers push changes to the `dev` branch or feature branches
 2. GitHub Actions runs the CI pipeline to test the code
