@@ -44,11 +44,7 @@ jobs:
       run: |
         pytest --cov=app tests/
         
-    - name: Upload test coverage report
-      uses: actions/upload-artifact@v3
-      with:
-        name: coverage-report
-        path: htmlcov/
+    # Removed the upload-artifact action that was causing issues
         
   build:
     needs: test
@@ -74,8 +70,3 @@ jobs:
         cp -r app deployment/
         cp -r config.py requirements.txt run.py deployment/
         
-    - name: Upload deployment package
-      uses: actions/upload-artifact@v3
-      with:
-        name: deployment-package
-        path: deployment/
