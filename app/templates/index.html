@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+    <h1>Welcome to Task Manager</h1>
+    <p>This is a simple task management application.</p>
+    <p>This application demonstrates a complete DevOps pipeline including:</p>
+    <ul>
+        <li>Continuous Integration with GitHub Actions</li>
+        <li>Infrastructure as Code with Ansible</li>
+        <li>Blue-Green Deployment Strategy</li>
+        <li>Automated Health Checks and Monitoring</li>
+    </ul>
+    <a href="{{ url_for('main.tasks') }}">Go to Tasks</a>
+{% endblock %}

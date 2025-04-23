@@ -1,0 +1,14 @@
+---
+- name: Update package cache
+  apt:
+    update_cache: yes
+  changed_when: false
+  when: ansible_os_family == "Debian"
+
+- name: Install common packages
+  package:
+    name:
+      - git
+      - curl
+      - rsync
+    state: present

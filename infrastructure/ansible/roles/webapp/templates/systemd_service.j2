@@ -1,0 +1,14 @@
+[Unit]
+Description={{ app_name }} service
+After=network.target
+
+[Service]
+User={{ app_user }}
+Group={{ app_group }}
+WorkingDirectory={{ current_symlink }}
+ExecStart={{ current_symlink }}/venv/bin/python run.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

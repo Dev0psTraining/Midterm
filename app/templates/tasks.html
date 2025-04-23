@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Tasks{% endblock %}
+
+{% block content %}
+    <h1>Tasks</h1>
+    
+    <div class="task-form">
+        <form method="POST">
+            <input type="text" name="task" placeholder="Enter a new task..." required>
+            <button type="submit">Add Task</button>
+        </form>
+    </div>
+    
+    <ul class="task-list">
+        {% for task in tasks %}
+            <li class="task-item {% if task.completed %}completed{% endif %}">
+                {{ task.content }}
+                <small>({{ task.created_at }})</small>
+            </li>
+        {% else %}
+            <li>No tasks yet.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

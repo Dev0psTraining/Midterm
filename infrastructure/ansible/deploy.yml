@@ -1,0 +1,107 @@
+---
+- name: Setup Python environment and deploy Flask application
+  hosts: local
+  become: yes
+  vars:
+    app_name: taskmanager
+    app_user: "{{ ansible_user_id }}"
+    app_group: "{{ ansible_user_id }}"
+    app_path: "{{ playbook_dir }}/../../"
+    venv_path: "{{ app_path }}/venv"
+    production_path: "/opt/{{ app_name }}"
+    blue_folder: "{{ production_path }}/blue"
+    green_folder: "{{ production_path }}/green"
+    current_symlink: "{{ production_path }}/current"
+    is_blue_active: "{{ (lookup('file', current_symlink) == blue_folder) if (stat_result.stat.exists and stat_result.stat.islnk) else true }}"
+    deploy_folder: "{{ green_folder if is_blue_active else blue_folder }}"
+    
+  tasks:
+    - name: Check if current symlink exists
+      stat:
+        path: "{{ current_symlink }}"
+      register: stat_result
+      
+    - name: Include common role
+      include_role:
+        name: common
+    
+    - name: Include Python role
+      include_role:
+        name: python
+        
+    - name: Create production directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0755'
+      loop:
+        - "{{ production_path }}"
+        - "{{ blue_folder }}"
+        - "{{ green_folder }}"
+        
+    - name: Initialize current symlink if not exists
+      file:
+        src: "{{ blue_folder }}"
+        dest: "{{ current_symlink }}"
+        state: link
+      when: not stat_result.stat.exists
+      
+    - name: Copy application files to deployment folder
+      synchronize:
+        src: "{{ app_path }}/app/"
+        dest: "{{ deploy_folder }}/app/"
+        delete: yes
+        rsync_opts:
+          - "--exclude=__pycache__"
+          - "--exclude=*.pyc"
+        
+    - name: Copy config files
+      copy:
+        src: "{{ app_path }}/{{ item }}"
+        dest: "{{ deploy_folder }}/"
+        mode: '0644'
+      loop:
+        - config.py
+        - requirements.txt
+        - run.py
+        
+    - name: Create virtual environment if not exists
+      command: python3 -m venv "{{ deploy_folder }}/venv"
+      args:
+        creates: "{{ deploy_folder }}/venv/bin/python"
+      
+    - name: Install requirements
+      pip:
+        requirements: "{{ deploy_folder }}/requirements.txt"
+        virtualenv: "{{ deploy_folder }}/venv"
+        
+    - name: Create systemd service file
+      template:
+        src: roles/webapp/templates/systemd_service.j2
+        dest: "/etc/systemd/system/{{ app_name }}.service"
+        mode: '0644'
+      notify: Restart application service
+        
+    - name: Switch to new deployment (blue-green)
+      file:
+        src: "{{ deploy_folder }}"
+        dest: "{{ current_symlink }}"
+        state: link
+        
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
+        
+    - name: Ensure application service is started
+      systemd:
+        name: "{{ app_name }}"
+        state: started
+        enabled: yes
+        
+  handlers:
+    - name: Restart application service
+      systemd:
+        name: "{{ app_name }}"
+        state: restarted

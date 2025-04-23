@@ -1,0 +1,44 @@
+---
+- name: Rollback to previous deployment
+  hosts: local
+  become: yes
+  vars:
+    app_name: taskmanager
+    production_path: "/opt/{{ app_name }}"
+    blue_folder: "{{ production_path }}/blue"
+    green_folder: "{{ production_path }}/green"
+    current_symlink: "{{ production_path }}/current"
+    
+  tasks:
+    - name: Check current deployment
+      command: readlink -f "{{ current_symlink }}"
+      register: current_deployment
+      changed_when: false
+      
+    - name: Determine rollback target
+      set_fact:
+        rollback_target: "{{ blue_folder if current_deployment.stdout == green_folder else green_folder }}"
+        
+    - name: Check if rollback target exists
+      stat:
+        path: "{{ rollback_target }}"
+      register: rollback_target_stat
+      
+    - name: Perform rollback
+      file:
+        src: "{{ rollback_target }}"
+        dest: "{{ current_symlink }}"
+        state: link
+      when: rollback_target_stat.stat.exists
+      notify: Restart application service
+      
+    - name: Fail if rollback target doesn't exist
+      fail:
+        msg: "Rollback target {{ rollback_target }} does not exist"
+      when: not rollback_target_stat.stat.exists
+      
+  handlers:
+    - name: Restart application service
+      systemd:
+        name: "{{ app_name }}"
+        state: restarted

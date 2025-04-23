@@ -1,0 +1,11 @@
+---
+- name: Ensure app directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0755'
+  loop:
+    - "{{ app_path }}"
+    - "{{ production_path }}"
